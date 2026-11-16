@@ -1,8 +1,6 @@
 package hansungwar;
 
 public class Unit {
-	int playerId;	// 어느 플레이어의 유닛인지 식별
-	
 	int hp = 100;
 	int moveSpeed = 1;
 	int attackPower = 10;
@@ -13,13 +11,7 @@ public class Unit {
 	int width = 40;
 	int height = 40;
 	
-	public Unit(int playerId){
-		this.playerId = playerId;
-	}
-	
-	public void move() {
-	    if (playerId == 1) {
-	        x += moveSpeed;
-	    }
+	public void move(int direction) {
+		x += moveSpeed * direction;
 	}
 }
