@@ -57,18 +57,68 @@ public class GamePanel extends JPanel {
         btnNewButton_5.setBounds(510, 27, 82, 75);
         panel.add(btnNewButton_5);
         
-        // 10밀리초마다 이동 함수 호출
+        // 10밀리초마다 호출
         Timer timer = new Timer(10, e -> {
         	int length1 = player1Units.size();
+        	int length2 = player2Units.size();
+        	
+        	// 플레이어1 유닛 입장에서 적이 공격 사거리 내에 있는지 검사 후 있으면 공격, 없으면 이동
         	for(int i=0; i<length1; i++) {
-        		player1Units.get(i).move(1);
+        		Unit unit = player1Units.get(i);
+        		double unitCenter = unit.center();
+        		int targetIndex = -1;	// 공격 타겟으로 정한 적의 인덱스, -1이면 공격하지 않고 넘어간다
+        		double targetCenter = Double.POSITIVE_INFINITY;
+        		
+        		for(int j=0; j<length2; j++) {
+        			Unit enemy = player2Units.get(j);
+        			double enemyCenter = enemy.center();
+        			if(enemyCenter >= unitCenter && enemyCenter <= unitCenter + unit.attackRange) {
+        				if(targetCenter > enemyCenter) {
+        					targetIndex = j;
+        					targetCenter = enemyCenter;
+        				}
+        			}
+        		}
+        		
+        		if(targetIndex == -1) {
+        			// 우측으로 이동
+        			player1Units.get(i).move(1);
+        		}
+        		else {
+        			Unit target = player2Units.get(targetIndex);
+        			unit.attack(target);
+        		}
         		repaint();
         	}
         	
-        	int length2 = player2Units.size();
-        	for(int i=0; i<length2; i++) {
-        		player2Units.get(i).move(-1);
-        		repaint();
+        	// 플레이어2 유닛 입장에서 적이 공격 사거리 내에 있는지 검사 후 있으면 공격, 없으면 이동
+        	for (int i = 0; i < length2; i++) {
+        	    Unit unit = player2Units.get(i);
+        	    double unitCenter = unit.center();
+        	    int targetIndex = -1;
+        	    double targetCenter = Double.NEGATIVE_INFINITY;
+
+        	    for (int j = 0; j < length1; j++) {
+        	        Unit enemy = player1Units.get(j);
+        	        double enemyCenter = enemy.center();
+        	        if (enemyCenter >= unitCenter-unit.attackRange && enemyCenter <= unitCenter) {
+        	        	if(enemyCenter > targetCenter) {
+        	        		targetIndex = j;
+        	        		targetCenter = enemyCenter;
+        	        	}
+        	        }
+        	    }
+
+        	    if (targetIndex == -1) {
+        	    	// 좌측으로 이동
+        	        unit.move(-1);
+        	    } 
+        	    else {
+        	    	Unit target = player1Units.get(targetIndex);
+        	        unit.attack(target);
+        	    }
+
+        	    repaint();
         	}
         });
         timer.start();
@@ -82,14 +132,14 @@ public class GamePanel extends JPanel {
     	for(int i=0; i<length1; i++) {
     		Unit unit = player1Units.get(i);
     		g.setColor(Color.BLUE);
-    		g.fillRect(unit.x, unit.y, unit.width, unit.height);
+    		g.fillRect((int)unit.x, (int)unit.y, (int)unit.width, (int)unit.height);
     	}
         
     	int length2 = player2Units.size();
     	for(int i=0; i<length2; i++) {
     		Unit unit = player2Units.get(i);
     		g.setColor(Color.RED);
-    		g.fillRect(unit.x, unit.y, unit.width, unit.height);
+    		g.fillRect((int)unit.x, (int)unit.y, (int)unit.width, (int)unit.height);
     	}
     }
     
