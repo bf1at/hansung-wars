@@ -65,6 +65,8 @@ public class GamePanel extends JPanel {
         	// 플레이어1 유닛 입장에서 적이 공격 사거리 내에 있는지 검사 후 있으면 공격, 없으면 이동
         	for(int i=0; i<length1; i++) {
         		Unit unit = player1Units.get(i);
+        		if(unit.state == Unit.State.DIE)
+        			continue;
         		double unitCenter = unit.center();
         		int targetIndex = -1;	// 공격 타겟으로 정한 적의 인덱스, -1이면 공격하지 않고 넘어간다
         		double targetCenter = Double.POSITIVE_INFINITY;
@@ -72,7 +74,7 @@ public class GamePanel extends JPanel {
         		for(int j=0; j<length2; j++) {
         			Unit enemy = player2Units.get(j);
         			double enemyCenter = enemy.center();
-        			if(enemyCenter >= unitCenter && enemyCenter <= unitCenter + unit.attackRange) {
+        			if(enemyCenter >= unitCenter && enemyCenter <= unitCenter + unit.attackRange && enemy.state != Unit.State.DIE) {
         				if(targetCenter > enemyCenter) {
         					targetIndex = j;
         					targetCenter = enemyCenter;
@@ -87,6 +89,9 @@ public class GamePanel extends JPanel {
         		else {
         			Unit target = player2Units.get(targetIndex);
         			unit.attack(target);
+        			if (target.state == Unit.State.DIE) {
+        	            destroy(target, 2000); // [임시] 2초 뒤 유닛 제거
+        	        }
         		}
         		repaint();
         	}
@@ -94,6 +99,8 @@ public class GamePanel extends JPanel {
         	// 플레이어2 유닛 입장에서 적이 공격 사거리 내에 있는지 검사 후 있으면 공격, 없으면 이동
         	for (int i = 0; i < length2; i++) {
         	    Unit unit = player2Units.get(i);
+        	    if(unit.state == Unit.State.DIE)
+        			continue;
         	    double unitCenter = unit.center();
         	    int targetIndex = -1;
         	    double targetCenter = Double.NEGATIVE_INFINITY;
@@ -101,7 +108,7 @@ public class GamePanel extends JPanel {
         	    for (int j = 0; j < length1; j++) {
         	        Unit enemy = player1Units.get(j);
         	        double enemyCenter = enemy.center();
-        	        if (enemyCenter >= unitCenter-unit.attackRange && enemyCenter <= unitCenter) {
+        	        if (enemyCenter >= unitCenter-unit.attackRange && enemyCenter <= unitCenter && enemy.state != Unit.State.DIE) {
         	        	if(enemyCenter > targetCenter) {
         	        		targetIndex = j;
         	        		targetCenter = enemyCenter;
@@ -116,8 +123,10 @@ public class GamePanel extends JPanel {
         	    else {
         	    	Unit target = player1Units.get(targetIndex);
         	        unit.attack(target);
+        	        if (target.state == Unit.State.DIE) {
+        	            destroy(target, 2000); // [임시] 2초 뒤 유닛 제거
+        	        }
         	    }
-
         	    repaint();
         	}
         });
@@ -143,4 +152,14 @@ public class GamePanel extends JPanel {
     	}
     }
     
+    // [임시] 밀리초 뒤에 유닛 목록에서 제거하는 함수
+    private void destroy(Unit target, int time) {
+    	Timer removeTimer = new Timer(time, e -> {
+            player1Units.remove(target);
+            player2Units.remove(target);
+            repaint();
+        });
+        removeTimer.setRepeats(false);
+        removeTimer.start();
+    }
 }
