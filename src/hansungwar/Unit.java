@@ -37,17 +37,16 @@ public class Unit {
 		x += moveSpeed * direction;
 	}
 	
-	public void attack(Unit target) {
-	    long now = System.currentTimeMillis();
-	    long attackIntervalMs = (long) (attackSpeed * 1000);
+	public boolean tryAttack(long now) {
+	    long intervalMs = (long) (attackSpeed * 1000);
 
-	    if (now - lastAttackTimeMs < attackIntervalMs) {
-	        return; // 아직 다음 공격을 할 수 없음
+	    if (now - lastAttackTimeMs < intervalMs) {
+	        return false;
 	    }
 
 	    state = State.ATTACK;
 	    lastAttackTimeMs = now;
-	    target.takeDamage(attackPower);
+	    return true;
 	}
 	
 	public void takeDamage(double damage) {

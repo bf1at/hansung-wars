@@ -59,97 +59,30 @@ public class GamePanel extends JPanel {
         
         // 10밀리초마다 호출
         Timer timer = new Timer(10, e -> {
-        	int length1 = player1Units.size();
-        	int length2 = player2Units.size();
-        	
-        	// 플레이어1 유닛 입장에서 적이 공격 사거리 내에 있는지 검사 후 있으면 공격, 없으면 이동
-        	for(int i=0; i<length1; i++) {
-        		Unit unit = player1Units.get(i);
-        		if(unit.state == Unit.State.DIE)
-        			continue;
-        		double unitCenter = unit.center();
-        		int targetIndex = -1;	// 공격 타겟으로 정한 적의 인덱스, -1이면 공격하지 않고 넘어간다
-        		double targetCenter = Double.POSITIVE_INFINITY;
-        		
-        		for(int j=0; j<length2; j++) {
-        			Unit enemy = player2Units.get(j);
-        			double enemyCenter = enemy.center();
-        			if(enemyCenter >= unitCenter && enemyCenter <= unitCenter + unit.attackRange && enemy.state != Unit.State.DIE) {
-        				if(targetCenter > enemyCenter) {
-        					targetIndex = j;
-        					targetCenter = enemyCenter;
-        				}
-        			}
-        		}
-        		
-        		if(targetIndex == -1) {
-        			// 우측으로 이동
-        			player1Units.get(i).move(1);
-        		}
-        		else {
-        			Unit target = player2Units.get(targetIndex);
-        			unit.attack(target);
-        			if (target.state == Unit.State.DIE) {
-        	            destroy(target, 2000); // [임시] 2초 뒤 유닛 제거
-        	        }
-        		}
-        		repaint();
-        	}
-        	
-        	// 플레이어2 유닛 입장에서 적이 공격 사거리 내에 있는지 검사 후 있으면 공격, 없으면 이동
-        	for (int i = 0; i < length2; i++) {
-        	    Unit unit = player2Units.get(i);
-        	    if(unit.state == Unit.State.DIE)
-        			continue;
-        	    double unitCenter = unit.center();
-        	    int targetIndex = -1;
-        	    double targetCenter = Double.NEGATIVE_INFINITY;
+            // 1. 아무도 움직이기 전에 양쪽 모두 이동 여부를 결정
+            ArrayList<Unit> movers1 = findMovers(player1Units, player2Units, 1);
+            ArrayList<Unit> movers2 = findMovers(player2Units, player1Units, -1);
 
-        	    for (int j = 0; j < length1; j++) {
-        	        Unit enemy = player1Units.get(j);
-        	        double enemyCenter = enemy.center();
-        	        if (enemyCenter >= unitCenter-unit.attackRange && enemyCenter <= unitCenter && enemy.state != Unit.State.DIE) {
-        	        	if(enemyCenter > targetCenter) {
-        	        		targetIndex = j;
-        	        		targetCenter = enemyCenter;
-        	        	}
-        	        }
-        	    }
+            // 2. 이동하기로 한 유닛을 실제로 이동
+            for (Unit unit : movers1) {
+                unit.move(1);
+            }
+            for (Unit unit : movers2) {
+                unit.move(-1);
+            }
 
-        	    if (targetIndex == -1) {
-        	    	// 좌측으로 이동
-        	        unit.move(-1);
-        	    } 
-        	    else {
-        	    	Unit target = player1Units.get(targetIndex);
-        	        unit.attack(target);
-        	        if (target.state == Unit.State.DIE) {
-        	            destroy(target, 2000); // [임시] 2초 뒤 유닛 제거
-        	        }
-        	    }
-        	    repaint();
-        	}
+            // 3. 이동 후 위치에서 양쪽 공격을 판정
+            long now = System.currentTimeMillis();
+            double[] damageToP2 = collectDamage(player1Units, player2Units, 1, now);
+            double[] damageToP1 = collectDamage(player2Units, player1Units, -1, now);
+
+            // 4. 양쪽 공격 판정이 끝났으니 체력에서 피해를 빼기
+            applyDamage(player1Units, damageToP1);
+            applyDamage(player2Units, damageToP2);
+
+            repaint();
         });
         timer.start();
-    }
-    
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        
-        int length1 = player1Units.size();
-    	for(int i=0; i<length1; i++) {
-    		Unit unit = player1Units.get(i);
-    		g.setColor(Color.BLUE);
-    		g.fillRect((int)unit.x, (int)unit.y, (int)unit.width, (int)unit.height);
-    	}
-        
-    	int length2 = player2Units.size();
-    	for(int i=0; i<length2; i++) {
-    		Unit unit = player2Units.get(i);
-    		g.setColor(Color.RED);
-    		g.fillRect((int)unit.x, (int)unit.y, (int)unit.width, (int)unit.height);
-    	}
     }
     
     // [임시] 밀리초 뒤에 유닛 목록에서 제거하는 함수
@@ -161,5 +94,112 @@ public class GamePanel extends JPanel {
         });
         removeTimer.setRepeats(false);
         removeTimer.start();
+    }
+    
+    // 화면에 요소 그리기
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        
+        int length1 = player1Units.size();
+    	for(int i=0; i<length1; i++) {
+    		Unit unit = player1Units.get(i);
+    		g.setColor(Color.BLUE);
+    		g.fillRect((int)unit.x, (int)unit.y, (int)unit.width, (int)unit.height);
+    		drawHealthBar(g, unit);
+    	}
+        
+    	int length2 = player2Units.size();
+    	for(int i=0; i<length2; i++) {
+    		Unit unit = player2Units.get(i);
+    		g.setColor(Color.RED);
+    		g.fillRect((int)unit.x, (int)unit.y, (int)unit.width, (int)unit.height);
+    		drawHealthBar(g, unit);
+    	}
+    }
+    
+    private int findTargetIndex(Unit unit, ArrayList<Unit> enemies, int direction) {
+        int targetIndex = -1;
+        double closestDistance = Double.POSITIVE_INFINITY;
+
+        for (int i = 0; i < enemies.size(); i++) {
+            Unit enemy = enemies.get(i);
+
+            if (enemy.state == Unit.State.DIE) {
+                continue;
+            }
+
+            double distance = (enemy.center() - unit.center()) * direction;
+
+            if (distance >= 0 && distance <= unit.attackRange
+                    && distance < closestDistance) {
+                closestDistance = distance;
+                targetIndex = i;
+            }
+        }
+
+        return targetIndex;
+    }
+    
+    private ArrayList<Unit> findMovers(ArrayList<Unit> allies, ArrayList<Unit> enemies, int direction) {
+    	ArrayList<Unit> movers = new ArrayList<>();
+
+    	for (Unit unit : allies) {
+    		if (unit.state == Unit.State.DIE) {
+    			continue;
+    		}
+
+    		if (findTargetIndex(unit, enemies, direction) == -1) {
+    			movers.add(unit);
+    		}
+    	}
+	
+    	return movers;
+    }
+    
+    private double[] collectDamage(ArrayList<Unit> allies, ArrayList<Unit> enemies, int direction, long now) {
+    	double[] damage = new double[enemies.size()];
+
+    	for (Unit unit : allies) {
+    		if (unit.state == Unit.State.DIE) {
+    			continue;
+    		}
+
+    		int targetIndex = findTargetIndex(unit, enemies, direction);
+
+    		if (targetIndex != -1 && unit.tryAttack(now)) {
+    			damage[targetIndex] += unit.attackPower;
+    		}
+    	}
+
+    	return damage;
+    }
+    
+    private void applyDamage(ArrayList<Unit> units, double[] damage) {
+        for (int i = 0; i < units.size(); i++) {
+            if (damage[i] == 0) {
+                continue;
+            }
+
+            Unit unit = units.get(i);
+            unit.takeDamage(damage[i]);
+
+            if (unit.state == Unit.State.DIE) {
+                destroy(unit, 2000);
+            }
+        }
+    }
+    
+    private void drawHealthBar(Graphics g, Unit unit) {;
+        int width = 35;
+        int x = (int) (unit.center() - width / 2.0);
+        int y = (int) unit.y - 10;
+        int remainingWidth = (int) (width * Math.max(0, unit.hp) / 100.0);
+
+        g.setColor(Color.GRAY);
+        g.fillRect(x, y, width, 4);
+
+        g.setColor(Color.GREEN);
+        g.fillRect(x, y, remainingWidth, 4);
     }
 }
