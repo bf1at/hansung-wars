@@ -1,6 +1,7 @@
 package hansungwar;
 
 import java.awt.*;
+import java.net.URL;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import java.util.ArrayList;
@@ -10,6 +11,10 @@ public class GamePanel extends JPanel {
 	// 유닛을 관리할 배열
 	private final ArrayList<Unit> player1Units = new ArrayList<>();
 	private final ArrayList<Unit> player2Units = new ArrayList<>();
+
+    // UI 버튼 배치 (기존 UI 버전 설정)
+    private static final int BUTTON_SIZE = 90;
+    private static final int BUTTON_Y = 20;
 	
 
     public GamePanel() {
@@ -17,46 +22,80 @@ public class GamePanel extends JPanel {
         setLayout(null);
         setPreferredSize(new Dimension(900, 600));
         
+        // 하단 UI 패널
         JPanel panel = new JPanel();
-        panel.setBorder(new LineBorder(new Color(0, 0, 0)));
+        panel.setLayout(null);
+        panel.setBorder(new LineBorder(Color.BLACK));
         panel.setBounds(0, 465, 900, 135);
         add(panel);
-        panel.setLayout(null);
-        
-        JButton btnNewButton_1 = new JButton("1");
-        btnNewButton_1.setBounds(33, 27, 82, 75);
-        panel.add(btnNewButton_1);
-        btnNewButton_1.addActionListener(e -> {
-        	Unit unit = new Unit();
+
+        // 1. 지갑 강화 버튼
+        JButton btnWallet = createImageButton(
+                "MoneyUP",
+                33, BUTTON_Y-10, BUTTON_SIZE+20
+        );
+        panel.add(btnWallet);
+
+        // 2. 상상부기 버튼
+        JButton btnSangsang = createImageButton(
+                "Sangsangbugi",
+                248, BUTTON_Y, BUTTON_SIZE
+        );
+        panel.add(btnSangsang);
+
+        // 3. 한성냥이 버튼
+        JButton btnCat = createImageButton(
+                "Hansungnyangi",
+                363, BUTTON_Y, BUTTON_SIZE
+        );
+        panel.add(btnCat);
+
+        // 4. 상찌 버튼
+        JButton btnFrog = createImageButton(
+                "Sangjji",
+                478, BUTTON_Y, BUTTON_SIZE
+        );
+        panel.add(btnFrog);
+
+        // 5. 꼬꼬&꾸꾸 버튼
+        JButton btnChicken = createImageButton(
+                "Kokko_Kkukkuk",
+                593, BUTTON_Y, BUTTON_SIZE
+        );
+        panel.add(btnChicken);
+
+        // -------------------------
+        // 버튼 클릭 테스트
+        // -------------------------
+
+        // 지갑 버튼: 임시로 파란 유닛 생성
+        btnWallet.addActionListener(e -> {
+            Unit unit = new Unit();
             unit.x = 50;
             unit.y = 425;
             player1Units.add(unit);
             repaint();
         });
-        
-        JButton btnNewButton_2 = new JButton("2");
-        btnNewButton_2.setBounds(148, 27, 82, 75);
-        panel.add(btnNewButton_2);
-        btnNewButton_2.addActionListener(e -> {
-        	Unit unit = new Unit();
+
+        // 상상부기 버튼: 임시로 빨간 유닛 생성
+        btnSangsang.addActionListener(e -> {
+            Unit unit = new Unit();
             unit.x = 810;
             unit.y = 425;
             player2Units.add(unit);
             repaint();
         });
-        
-        JButton btnNewButton_3 = new JButton("3");
-        btnNewButton_3.setBounds(266, 27, 82, 75);
-        panel.add(btnNewButton_3);
-        
-        JButton btnNewButton_4 = new JButton("4");
-        btnNewButton_4.setBounds(390, 27, 82, 75);
-        panel.add(btnNewButton_4);
-        
-        JButton btnNewButton_5 = new JButton("5");
-        btnNewButton_5.setBounds(510, 27, 82, 75);
-        panel.add(btnNewButton_5);
-        
+
+        // 나머지는 UI 테스트용 파란 유닛 생성
+        btnCat.addActionListener(e -> spawnTestUnit());
+        btnFrog.addActionListener(e -> spawnTestUnit());
+        btnChicken.addActionListener(e -> spawnTestUnit());
+
+        // 비활성화 이미지 확인용
+        // 원하는 버튼에 아래 코드를 적용해서 테스트
+        // btnFrog.setEnabled(false);
+
+        // 최신 게임 로직: 이동, 공격, 체력 처리는 아래 코드 그대로 사용
         // 10밀리초마다 호출
         Timer timer = new Timer(10, e -> {
             // 1. 아무도 움직이기 전에 양쪽 모두 이동 여부를 결정
@@ -85,6 +124,72 @@ public class GamePanel extends JPanel {
         timer.start();
     }
     
+    // 테스트용 유닛 생성
+    private void spawnTestUnit() {
+
+        Unit unit = new Unit();
+        unit.x = 50;
+        unit.y = 425;
+
+        player1Units.add(unit);
+        repaint();
+    }
+
+    // 이미지 버튼 생성
+    private JButton createImageButton(
+            String name, int x, int y, int size) {
+
+        String normal = name + "_Enabled.png";
+        String disabled = name + "_Disabled.png";
+
+        // 모든 버튼은 공통 파일명 규칙 사용
+        String pressed = name + "_Pressed.png";
+
+        ImageIcon normalIcon = loadIcon(normal, size);
+        ImageIcon pressedIcon = loadIcon(pressed, size);
+        ImageIcon disabledIcon = loadIcon(disabled, size);
+
+        JButton button = new JButton(normalIcon);
+
+        button.setBounds(x, y, size, size);
+
+        button.setPressedIcon(pressedIcon);
+        button.setDisabledIcon(disabledIcon);
+
+        // 기본 Swing 버튼 테두리 제거
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setFocusPainted(false);
+        button.setOpaque(false);
+
+        return button;
+    }
+
+    // PNG 불러오기 + 크기 조절
+    private ImageIcon loadIcon(String fileName, int size) {
+
+        String path = "/hansungwar/images/" + fileName;
+
+        URL url = getClass().getResource(path);
+
+        if (url == null) {
+            throw new IllegalArgumentException(
+                    "이미지 파일을 찾을 수 없습니다: " + path
+            );
+        }
+
+        ImageIcon original = new ImageIcon(url);
+
+        Image scaled = original.getImage()
+                .getScaledInstance(
+                        size,
+                        size,
+                        Image.SCALE_SMOOTH
+                );
+
+        return new ImageIcon(scaled);
+    }
+
     // [임시] 밀리초 뒤에 유닛 목록에서 제거하는 함수
     private void destroy(Unit target, int time) {
     	Timer removeTimer = new Timer(time, e -> {
