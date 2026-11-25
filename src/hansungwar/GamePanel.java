@@ -142,14 +142,8 @@ public class GamePanel extends JPanel {
         String normal = name + "_Enabled.png";
         String disabled = name + "_Disabled.png";
 
-        // 지갑 강화 버튼은 파일명이 Pressedd
-        String pressed;
-
-        if (name.equals("MoneyUP")) {
-            pressed = "MoneyUP_Pressed.png";
-        } else {
-            pressed = name + "_Pressed.png";
-        }
+        // 모든 버튼은 공통 파일명 규칙 사용
+        String pressed = name + "_Pressed.png";
 
         ImageIcon normalIcon = loadIcon(normal, size);
         ImageIcon pressedIcon = loadIcon(pressed, size);
